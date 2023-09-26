@@ -16,3 +16,8 @@ __4__- When using get_query() try using double cotes or docstring, since simple 
               __'''__<br>
         __get_query(query)__<br><br>
 __5__- SOQL syntax and functions can be found here: https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql.htm<br>
+__6__ - __How to Generate a Security Token in Salesforce:__
+* Log in to your Salesforce account. ...
+* Click the profile avatar and choose Settings.
+* Select My Personal Information → Reset My Security Token.
+* Check your email for the security token.
