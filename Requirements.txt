@@ -1,0 +1,4 @@
+requests
+tqdm
+simple_salesforce
+pandas
