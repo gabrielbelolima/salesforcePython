@@ -6,7 +6,7 @@ Created on Thu Sep 26 09:16:18 2023
 """
 
 from simple_salesforce import Salesforce
-from login_params import login_params
+from login_params import login_params #I recommend you use enviroment secrets! 
 import requests
 import pandas as pd
 from tqdm.notebook import tqdm   
