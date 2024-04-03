@@ -17,13 +17,18 @@ sc_sfpassword = login_params['password']
 sc_sftoken = login_params['securityToken']
 domain = login_params['domain.my']
 
-session = requests.Session()
-sf = Salesforce(username=sc_sfuser, 
-                password=sc_sfpassword, 
-                security_token=sc_sftoken,
-                domain=domain,
-                session=session
-               )
+def session_sf(sc_sfuser=sc_sfuser, sc_sfpassword=sc_sfpassword, sc_sftoken=sc_sftoken, domain=domain):
+    
+  session = requests.Session()
+  sf = Salesforce(username=sc_sfuser, 
+                  password=sc_sfpassword, 
+                  security_token=sc_sftoken,
+                  domain=domain,
+                  session=session
+                )
+  return sf
+
+sf = session_sf()
 
 def get_query(query = str(), attributes = False):
     '''
@@ -117,7 +122,7 @@ def get_table(table_name, where = None, limit = None, label = True, bar = True):
     df = None
     
     if bar == True:
-        range_aux = tqdm(range(totalSize))
+        range_aux = tqdm(range(totalSize), leave=False)
     else:
         range_aux = range(totalSize)
         
@@ -130,6 +135,33 @@ def get_table(table_name, where = None, limit = None, label = True, bar = True):
     
     return df
 
+
+def get_table_iter(obj = str, iter_serie = pd.Series, lookup_col = 'Email__c', normalize_txt = False, step = 300):
+
+  step = min(step, len(iter_serie))
+
+  # - Carrega lista de valores para o loop
+  if normalize_txt:
+    leads_from_vendas = list(iter_serie.str.lower().drop_duplicates().values)
+  else:
+    leads_from_vendas = list(iter_serie.drop_duplicates().values)
+
+  # iterando a lista de emails em batches (limitação do Salesforce)
+  passo = min(step, len(leads_from_vendas))
+  ls_lf = list()
+  x = 0
+
+  # log
+  print('batch size:', passo)
+  print('Loading batches..')
+  
+  for x in tqdm(range(0, len(leads_from_vendas), passo), colour='#2CD5E4'):
+    ls_lf.append(get_table(obj, where = "{} IN {}".format(lookup_col, tuple(leads_from_vendas[x:x+passo])), bar=True))
+
+  # - Concatena dados
+  sf_leads = pd.concat(ls_lf, ignore_index = True)
+  
+  return sf_leads
 
 def get_objects_names():
     '''Retorna pd.DataFrame() com todos os Objetos encontrados no SalesForce acessíveis via API ou Workbench'''
