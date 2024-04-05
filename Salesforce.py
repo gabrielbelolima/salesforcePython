@@ -4,6 +4,7 @@ Created on Thu Feb 15 15:03:20 2024
 
 @author: Gabriel Belo
 """
+
 import pandas as pd
 import requests
 from simple_salesforce import Salesforce
@@ -28,8 +29,36 @@ class SalesForce:
             session= session
                       )
             
+
+    def get_cols_json(self, df):
+            
+        try:
+            dct_types = df.apply(lambda x: x.dropna().iloc[[0]].apply(lambda y: type(y))).iloc[0].to_dict()
+            lst_col_dict = list({k:v for k,v in dct_types.items() if 'dict' in str(v).lower()}.keys())
+        except:
+            return df
+
+        if len(lst_col_dict) == 0:
+            #print('Nenhuma coluna json encontrada!')
+            return df
+    
+            
+        list_dfs = []
+        for c in lst_col_dict:
+            df_aux = pd.json_normalize(df[c])
+            df_aux = df_aux.drop([c for c in df_aux.columns if 'attributes' in c.lower()], axis =1)
+            list_dfs.append(df_aux)
+        if len(list_dfs)<2:
+            df_aux = list_dfs[0]
+        else:
+            df_aux = pd.concat(list_dfs, ignore_index = True)
+        df_aux
+        df = df.drop(lst_col_dict, axis = 1).join(df_aux)
         
-    def get_query(self,query = str(), attributes = False):
+        return df
+        
+    
+    def get_query(self, query = str(), attributes = False):
         '''
         Executa Query SOQL numa determinada versão da API
         input: Query SOQL, url de ação, versão desejada e json de autenticação.
@@ -43,12 +72,12 @@ class SalesForce:
         
         if attributes == False:
             try:
-                return df.drop('attributes', axis = 1) 
+                df = df.drop('attributes', axis = 1) 
             except:
                 pass  
-        else:
-            return df
-        
+        df = self.get_cols_json(df)
+        return df
+                  
         
     def get_label(self, table_name =str(), return_df = False):
         '''Recebe o nome de um objeto do salesforce e retorna label_name's cadastradas no sistema'''
@@ -88,7 +117,8 @@ class SalesForce:
 
     def get_columns(self, tb_name = str()):
         '''List all columns from table'''
-        ls_col = self.get_query("SELECT FIELDS(ALL) FROM {} LIMIT 1".format(tb_name)).columns
+        q = "SELECT FIELDS(ALL) FROM {} LIMIT 1".format(tb_name)
+        ls_col = self.get_query(q).columns
         
         return str(list(ls_col)).replace('[','').replace(']','').replace("'",'')
 
